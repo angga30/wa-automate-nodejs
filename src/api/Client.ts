@@ -180,6 +180,7 @@ declare module WAPI {
   const onLiveLocation: (chatId: string, callback: Function) => any;
   const getSingleProperty: (namespace: string, id: string, property : string) => any;
   const sendMessage: (to: string, content: string) => Promise<string>;
+  const sendMessageReturnId: (to: string, content: string) => Promise<string>;
   const downloadFileWithCredentials: (url: string) => Promise<string>;
   const sendMessageWithMentions: (to: string, content: string) => Promise<string>;
   const tagEveryone: (groupId: string, content: string) => Promise<string>;
@@ -874,7 +875,7 @@ public async onLiveLocation(chatId: ChatId, fn: (liveLocationChangedEvent: LiveL
     let res = await this.pup(
       ({ to, content }) => {
         WAPI.sendSeen(to);
-        return WAPI.sendMessage(to, content);
+        return WAPI.sendMessageReturnId(to, content);
       },
       { to, content }
     );
