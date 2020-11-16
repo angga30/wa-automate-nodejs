@@ -26,6 +26,7 @@ import * as path from 'path';
 import { CustomProduct } from './model/product';
 import Crypto from 'crypto';
 import { tmpdir } from 'os';
+import { cat } from 'shelljs';
 
 export enum namespace {
   Chat = 'Chat',
@@ -327,7 +328,12 @@ declare module WAPI {
     chatId: string,
     includeMe: boolean,
     includeNotifications: boolean,
-  ) => [Message]
+  ) => [Message];
+  const sendMessageNonContact: (to: ChatId,
+    file: DataURL | FilePath,
+    filename: string,
+    caption: Content,) => Promise<string>;
+  const checkContack: (to: ChatId) => Promise<boolean>;
 }
 
 export class Client {
@@ -2773,6 +2779,60 @@ public async getStatus(contactId: ContactId) {
     console.log('Invalid lisetner', event);
     return false;
   }
+
+  public async sendMessageNonContact(to: ChatId,
+    caption: Content,
+    file?: DataURL | FilePath,
+    filename?: string,
+    ) {
+      try {
+        console.log("https://web.whatsapp.com/send?phone="+to.replace("c.us","")+"&&text="+caption);
+      await this._page.goto("https://web.whatsapp.com/send?phone="+to.replace("@c.us","")+"&text="+caption, {waitUntil: 'domcontentloaded'});
+      var btn_send = '//*[@id="main"]/footer/div[1]/div[3]/button';
+      
+      if (file != null) {
+        var button_lapiran = '//*[@id="main"]/footer/div[1]/div[1]/div[2]';
+        var input_file = '//*[@id="main"]/footer/div[1]/div[1]/div[2]/div/span/div/div/ul/li[1]/button/input'
+        await this._page.waitForXPath(button_lapiran);
+        var btn = await this._page.$x(button_lapiran);
+        await btn[0].click();
+        await this._page.waitForXPath(input_file);
+        var files = await this._page.$x(input_file);
+          var regex = /^data:.+\/(.+);base64,(.*)$/;
+        var matches = await file.match(regex);  
+        var data = await matches[2];
+        var buffer = await Buffer.from(data, 'base64');
+        await fs.writeFileSync(filename, buffer);
+        await files[0].uploadFile(filename);
+        
+        btn_send = '//*[@id="app"]/div/div/div[2]/div[2]/span/div/span/div/div/div[2]/span/div/div';
+      }
+      await this._page.waitForXPath(btn_send);
+      var tag_btn = await this._page.$x(btn_send);
+      await tag_btn[0].click();
+      await this._page.waitForTimeout(5000);
+      // await this._page.evaluate(({select}) => { document.querySelector(select).click()},tag_btn[0]);
+      var id =  await this.pup(() => {
+        var msg = document.getElementsByClassName('message-out');
+        return msg[msg.length-1].getAttribute("data-id");
+      })
+      console.log(id);
+      await this.refresh();
+      await fs.unlinkSync(filename);
+      return id;
+      }catch(e){
+        console.log(e);
+      }
+    }
+  public async checkContact(to: ChatId){
+    var x = await this.pup((to) => {
+      return WAPI.getContact(to);
+    }, to);
+    console.log(x)
+    return x;
+  }
+
+
 }
 
 export { useragent } from '../config/puppeteer.config'
