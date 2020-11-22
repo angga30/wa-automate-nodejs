@@ -881,7 +881,7 @@ export class Client {
     let res = await this.pup(
       ({ to, content }) => {
         WAPI.sendSeen(to);
-        return WAPI.sendMessageReturnId(to, content);
+        return WAPI.sendMessage(to, content);
       },
       { to, content }
     );
