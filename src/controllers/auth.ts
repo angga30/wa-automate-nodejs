@@ -23,9 +23,9 @@ export const needsToScan = (waPage: Page): Observable<unknown> => {
       await Promise.race([
         waPage.waitForFunction('checkQrRefresh()', { timeout: 0, polling: 1000 }).catch(() => { }),
         await waPage
-          .waitForSelector('body > div > div > .landing-wrapper', {
-            timeout: 0
-          }).catch(() => resolve(true))
+            .waitForSelector('body > div > div > .landing-wrapper', {
+              timeout: 0
+            }).catch(() => resolve(true))
       ]).catch(() => { })
       await waPage.waitForSelector("canvas[aria-label='Scan me!']", { timeout: 0 }).catch(() => { })
       resolve(false)
@@ -38,30 +38,30 @@ export const needsToScan = (waPage: Page): Observable<unknown> => {
 
 const isInsideChat = (waPage: Page): Observable<boolean> => {
   return from(
-    waPage
-      .waitForFunction(
-        "!!window.WA_AUTHENTICATED || (document.getElementsByClassName('app')[0] && document.getElementsByClassName('app')[0].attributes && !!document.getElementsByClassName('app')[0].attributes.tabindex) || (document.getElementsByClassName('two')[0] && document.getElementsByClassName('two')[0].attributes && !!document.getElementsByClassName('two')[0].attributes.tabindex)",
-        { timeout: 0 }
-      )
-      .then(() => true)
+      waPage
+          .waitForFunction(
+              "!!window.WA_AUTHENTICATED || (document.getElementsByClassName('app')[0] && document.getElementsByClassName('app')[0].attributes && !!document.getElementsByClassName('app')[0].attributes.tabindex) || (document.getElementsByClassName('two')[0] && document.getElementsByClassName('two')[0].attributes && !!document.getElementsByClassName('two')[0].attributes.tabindex)",
+              { timeout: 0 }
+          )
+          .then(() => true)
   );
 };
 
 const isTosBlocked  = (waPage: Page): Observable<string | boolean> => {
   return from(
-    waPage
-      .waitForFunction(
-        `document.getElementsByTagName("html")[0].classList[0] === 'no-js'`,
-        { timeout: 0 }
-      )
-      .then(() => false)
+      waPage
+          .waitForFunction(
+              `document.getElementsByTagName("html")[0].classList[0] === 'no-js'`,
+              { timeout: 0 }
+          )
+          .then(() => false)
   );
 };
 
 export const waitForRipeSession = async (waPage: Page): Promise<boolean> => {
   try {
     await waPage.waitForFunction(`window.isRipeSession()`,
-      { timeout: 0, polling: 'mutation' });
+        { timeout: 0, polling: 'mutation' });
     return true;
   } catch (error) {
     return false;
@@ -71,30 +71,30 @@ export const waitForRipeSession = async (waPage: Page): Promise<boolean> => {
 export const sessionDataInvalid = async (waPage: Page): Promise<string> => {
   const check = `Object.keys(localStorage).includes("old-logout-cred")`
   await waPage
-    .waitForFunction(
-      check,
-      { timeout: 0, polling: 'mutation' }
-    )
+      .waitForFunction(
+          check,
+          { timeout: 0, polling: 'mutation' }
+      )
   // await injectApi(waPage, null, true);
   // await waPage
   //   .waitForFunction(
   //     '!window.getQrPng',
   //     { timeout: 0, polling: 'mutation' }
   //   )
-    // await timeout(1000000)
-    //NEED A DIFFERENT WAY TO DETERMINE IF THE SESSION WAS LOGGED OUT!!!!
+  // await timeout(1000000)
+  //NEED A DIFFERENT WAY TO DETERMINE IF THE SESSION WAS LOGGED OUT!!!!
   //if the code reaches here it means the browser was refreshed. Nuke the session data and restart `create`
   return 'NUKE';
 }
 
 export const phoneIsOutOfReach = async (waPage: Page): Promise<boolean> => {
   return await waPage
-    .waitForFunction(
-      'document.querySelector("body").innerText.includes("Trying to reach phone")',
-      { timeout: 0, polling: 'mutation' }
-    )
-    .then(() => true)
-    .catch(() => false);
+      .waitForFunction(
+          'document.querySelector("body").innerText.includes("Trying to reach phone")',
+          { timeout: 0, polling: 'mutation' }
+      )
+      .then(() => true)
+      .catch(() => false);
 };
 
 export class QRManager {
@@ -122,13 +122,14 @@ export class QRManager {
   }
 
   async grabAndEmit(qrData, waPage: Page, config: ConfigObject, spinner: Spin) {
-    this.qrNum++;
-    if (config.qrMax && this.qrNum > config.qrMax) {
-      spinner.info('QR Code limit reached, exiting...');
-      await kill(waPage, null, true, null, "QR_LIMIT_REACHED")
-    }
+    // Must not be used for multi session. This qrNum for all session
+    // this.qrNum++;
+    // if (config.qrMax && this.qrNum > config.qrMax) {
+    //   spinner.info('QR Code limit reached, exiting...');
+    //   await kill(waPage, null, true, null, "QR_LIMIT_REACHED")
+    // }
     const qrEv = this.qrEvF(config)
-    if ((!this.qrNum || this.qrNum == 1) && BROWSER_START_TS) spinner.info(`First QR: ${Date.now() - BROWSER_START_TS} ms`)
+    // if ((!this.qrNum || this.qrNum == 1) && BROWSER_START_TS) spinner.info(`First QR: ${Date.now() - BROWSER_START_TS} ms`)
     if (qrData) {
       qrEv.emit(qrData, `qrData`);
       if (!config.qrLogSkip) qrcode.generate(qrData, { small: true });
@@ -137,7 +138,9 @@ export class QRManager {
         log.info(`New QR Code generated. Not printing in console because qrLogSkip is set to true`)
       }
     }
-    if(!this._internalQrPngLoaded) {
+    // Must load for every session
+    if (true) {
+      // if(!this._internalQrPngLoaded) {
       log.info("Waiting for internal QR renderer to load")
       const t = await timePromise(() => waPage.waitForFunction(`window.getQrPng || false`, { timeout: 0, polling: 'mutation' }))
       log.info(`Internal QR renderer loaded in ${t} ms`)
@@ -227,8 +230,9 @@ export class QRManager {
   }
 
   async emitFirst(waPage: Page, config?: ConfigObject, spinner?: Spin){
-    if(this.firstEmitted) return;
-    this.firstEmitted = true;
+    // Disable for multi session
+    // if(this.firstEmitted) return;
+    // this.firstEmitted = true;
     const firstQr = await waPage.evaluate(this.qrCheck);
     await this.grabAndEmit(firstQr, waPage, config, spinner);
   }
@@ -242,7 +246,7 @@ export class QRManager {
       polling: 500,
       timeout: 10000
     })
-    .catch(()=>false)
+        .catch(()=>false)
     if(fqr) await this.emitFirst(waPage,config,spinner);
     return;
   }

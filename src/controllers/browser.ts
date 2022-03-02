@@ -17,9 +17,9 @@ import { scriptLoader } from './script_preloader';
 import { earlyInjectionCheck } from './patch_manager';
 
 let browser,
-wapiInjected = false,
-dumbCache = undefined,
-wapiAttempts = 1;
+    wapiInjected = false,
+    dumbCache = undefined,
+    wapiAttempts = 1;
 
 export let BROWSER_START_TS = 0;
 
@@ -53,7 +53,7 @@ export async function initPage(sessionId?: string, config?:ConfigObject, customU
         frameNavPromises.push(qrManager.waitFirstQr(waPage, config, spinner))
       }
       if(frame.url().includes('post_logout=1')) {
-          console.log("Session most likely logged out")
+        console.log("Session most likely logged out")
       }
       await Promise.all(frameNavPromises)
     } catch (error) {
@@ -68,11 +68,11 @@ export async function initPage(sessionId?: string, config?:ConfigObject, customU
   }
   setupPromises.push(waPage.setUserAgent(customUserAgent||useragent));
   if(config?.defaultViewport!==null)
-  setupPromises.push(waPage.setViewport({
-    width: config?.viewport?.width || width,
-    height: config?.viewport?.height || height,
-    deviceScaleFactor: 1
-  }));
+    setupPromises.push(waPage.setViewport({
+      width: config?.viewport?.width || width,
+      height: config?.viewport?.height || height,
+      deviceScaleFactor: 1
+    }));
   const cacheEnabled = config?.cacheEnabled === false ? false : true;
   const blockCrashLogs = config?.blockCrashLogs === false ? false : true;
   setupPromises.push(waPage.setBypassCSP(config?.bypassCSP || false));
@@ -86,57 +86,57 @@ export async function initPage(sessionId?: string, config?:ConfigObject, customU
   }
 
   const interceptAuthentication = !(config?.safeMode);
-  const proxyAddr = config?.proxyServerCredentials ? `${config.proxyServerCredentials?.username && config.proxyServerCredentials?.password ? `${config.proxyServerCredentials.protocol || 
-    config.proxyServerCredentials.address.includes('https') ? 'https' : 
-    config.proxyServerCredentials.address.includes('http') ? 'http' : 
-    config.proxyServerCredentials.address.includes('socks5') ? 'socks5' : 
-    config.proxyServerCredentials.address.includes('socks4') ? 'socks4' : 'http'}://${config.proxyServerCredentials.username}:${config.proxyServerCredentials.password}@${config.proxyServerCredentials.address
-    .replace('https', '')
-    .replace('http', '')
-    .replace('socks5', '')
-    .replace('socks4', '')
-    .replace('://', '')}` : config.proxyServerCredentials.address}` : false;
+  const proxyAddr = config?.proxyServerCredentials ? `${config.proxyServerCredentials?.username && config.proxyServerCredentials?.password ? `${config.proxyServerCredentials.protocol ||
+  config.proxyServerCredentials.address.includes('https') ? 'https' :
+      config.proxyServerCredentials.address.includes('http') ? 'http' :
+          config.proxyServerCredentials.address.includes('socks5') ? 'socks5' :
+              config.proxyServerCredentials.address.includes('socks4') ? 'socks4' : 'http'}://${config.proxyServerCredentials.username}:${config.proxyServerCredentials.password}@${config.proxyServerCredentials.address
+      .replace('https', '')
+      .replace('http', '')
+      .replace('socks5', '')
+      .replace('socks4', '')
+      .replace('://', '')}` : config.proxyServerCredentials.address}` : false;
   let quickAuthed = false;
   let proxy;
   if(proxyAddr) {
     proxy = (await import('puppeteer-page-proxy')).default
   }
   if(interceptAuthentication || proxyAddr || blockCrashLogs || true){
-      await waPage.setRequestInterception(true);  
-      waPage.on('response', async response => {
-        try {
-          if(response.request().url() == "https://web.whatsapp.com/") {
-            const t = await response.text()
-            if(t.includes(`class="no-js"`) && t.includes(`self.`) && !dumbCache) {
-              //this is a valid response, save it for later
-              dumbCache = t;
-              log.info("saving valid page to dumb cache")
-            }
+    await waPage.setRequestInterception(true);
+    waPage.on('response', async response => {
+      try {
+        if(response.request().url() == "https://web.whatsapp.com/") {
+          const t = await response.text()
+          if(t.includes(`class="no-js"`) && t.includes(`self.`) && !dumbCache) {
+            //this is a valid response, save it for later
+            dumbCache = t;
+            log.info("saving valid page to dumb cache")
           }
-        } catch (error) {
-          log.error("dumb cache error", error)
         }
-      })
-      const authCompleteEv = new EvEmitter(sessionId, 'AUTH');
-      waPage.on('request', async request => {
-        //local refresh cache:
-        if(request.url()==="https://web.whatsapp.com/" && dumbCache) {
-          //if the dumbCache isn't set and this response includes 
-          log.info("reviving page from dumb cache")
-            return await request.respond({
-              status: 200,
-              body: dumbCache
-            });
-        }
-        if (
+      } catch (error) {
+        log.error("dumb cache error", error)
+      }
+    })
+    const authCompleteEv = new EvEmitter(sessionId, 'AUTH');
+    waPage.on('request', async request => {
+      //local refresh cache:
+      if(request.url()==="https://web.whatsapp.com/" && dumbCache) {
+        //if the dumbCache isn't set and this response includes
+        log.info("reviving page from dumb cache")
+        return await request.respond({
+          status: 200,
+          body: dumbCache
+        });
+      }
+      if (
           interceptAuthentication &&
           request.url().includes('_priority_components') &&
           !quickAuthed
-        ) {
-          authCompleteEv.emit(true);
-          await waPage.evaluate('window.WA_AUTHENTICATED=true;');
-          quickAuthed = true;
-        }
+      ) {
+        authCompleteEv.emit(true);
+        await waPage.evaluate('window.WA_AUTHENTICATED=true;');
+        quickAuthed = true;
+      }
       if (request.url().includes('https://crashlogs.whatsapp.net/') && blockCrashLogs){
         request.abort();
       }
@@ -144,61 +144,61 @@ export async function initPage(sessionId?: string, config?:ConfigObject, customU
         proxy(request, proxyAddr)
       }
       else request.continue();
-      })
-    
+    })
+
   }
   if(skipAuth) {
     spinner.info("Skipping Authentication")
   } else {
-  /**
-   * AUTH
-   */
-  spinner?.info('Loading session data')
-  let sessionjson : any = getSessionDataFromFile(sessionId, config, spinner)
-  if(!sessionjson && sessionjson !== "" && config.sessionDataBucketAuth) {
-    try {
-      spinner?.info('Unable to find session data file locally, attempting to find session data in cloud storage..')
-      sessionjson = JSON.parse(Buffer.from(await getTextFile({
-        directory: '_sessionData',
-        ...JSON.parse(Buffer.from(config.sessionDataBucketAuth, 'base64').toString('ascii')),
-        filename: `${config.sessionId || 'session'}.data.json`
-      }), 'base64').toString('ascii'));
-      spinner?.succeed('Successfully downloaded session data file from cloud storage!')
-    } catch (error) {
-      spinner?.fail(`${error instanceof FileNotFoundError ? 'The session data file was not found in the cloud storage bucket' : 'Something went wrong while fetching session data from cloud storage bucket'}. Continuing...`)
+    /**
+     * AUTH
+     */
+    spinner?.info('Loading session data')
+    let sessionjson : any = getSessionDataFromFile(sessionId, config, spinner)
+    if(!sessionjson && sessionjson !== "" && config.sessionDataBucketAuth) {
+      try {
+        spinner?.info('Unable to find session data file locally, attempting to find session data in cloud storage..')
+        sessionjson = JSON.parse(Buffer.from(await getTextFile({
+          directory: '_sessionData',
+          ...JSON.parse(Buffer.from(config.sessionDataBucketAuth, 'base64').toString('ascii')),
+          filename: `${config.sessionId || 'session'}.data.json`
+        }), 'base64').toString('ascii'));
+        spinner?.succeed('Successfully downloaded session data file from cloud storage!')
+      } catch (error) {
+        spinner?.fail(`${error instanceof FileNotFoundError ? 'The session data file was not found in the cloud storage bucket' : 'Something went wrong while fetching session data from cloud storage bucket'}. Continuing...`)
+      }
     }
-  }
 
-  if(sessionjson) {
-  spinner?.info(config.multiDevice ?  "multi-device enabled. Session data skipped..." : 'Existing session data detected. Injecting...')
-  if(!config?.multiDevice) await waPage.evaluateOnNewDocument(
-  session => {
-        localStorage.clear();
-        Object.keys(session).forEach(key=>localStorage.setItem(key,session[key]));
-    }, sessionjson);
-    spinner?.succeed('Existing session data injected')
-  } else {
-    if(config?.multiDevice) {
-      spinner?.info("No session data detected. Opting in for MD.")
-      spinner?.info("Make sure to keep the session alive for at least 5 minutes after scanning the QR code before trying to restart a session!!")
-      await waPage.evaluateOnNewDocument(
-        session => {
+    if(sessionjson) {
+      spinner?.info(config.multiDevice ?  "multi-device enabled. Session data skipped..." : 'Existing session data detected. Injecting...')
+      if(!config?.multiDevice) await waPage.evaluateOnNewDocument(
+          session => {
+            localStorage.clear();
+            Object.keys(session).forEach(key=>localStorage.setItem(key,session[key]));
+          }, sessionjson);
+      spinner?.succeed('Existing session data injected')
+    } else {
+      if(config?.multiDevice) {
+        spinner?.info("No session data detected. Opting in for MD.")
+        spinner?.info("Make sure to keep the session alive for at least 5 minutes after scanning the QR code before trying to restart a session!!")
+        await waPage.evaluateOnNewDocument(
+            session => {
               localStorage.clear();
               Object.keys(session).forEach(key=>localStorage.setItem(key,session[key]));
-          },{
-            "md-opted-in": "true",
-            "MdUpgradeWamFlag": "true",
-            "remember-me": "true"
-          })
+            },{
+              "md-opted-in": "true",
+              "MdUpgradeWamFlag": "true",
+              "remember-me": "true"
+            })
+      }
     }
+    /**
+     * END AUTH
+     */
   }
-  /**
-   * END AUTH
-   */
+  if(config?.proxyServerCredentials && !config?.useNativeProxy) {
+    await proxy(waPage, proxyAddr);
   }
-    if(config?.proxyServerCredentials && !config?.useNativeProxy) {
-      await proxy(waPage, proxyAddr);
-    }
   if(config?.proxyServerCredentials?.address) spinner.succeed(`Active proxy: ${config.proxyServerCredentials.address}`)
   await Promise.all(setupPromises);
   spinner?.info(`Pre page launch setup complete: ${(now() - postBrowserLaunchTs).toFixed(0)}ms`)
@@ -222,7 +222,7 @@ export async function initPage(sessionId?: string, config?:ConfigObject, customU
 }
 
 const getSessionDataFromFile = (sessionId: string, config: ConfigObject, spinner ?: Spin) => {
-  if(config?.sessionData == "NUKE") return '' 
+  if(config?.sessionData == "NUKE") return ''
   //check if [session].json exists in __dirname
   const sessionjsonpath = getSessionDataFilePath(sessionId,config)
   let sessionjson = '';
@@ -235,13 +235,13 @@ const getSessionDataFromFile = (sessionId: string, config: ConfigObject, spinner
       sessionjson = JSON.parse(s);
     } catch (error) {
       try {
-      sessionjson = JSON.parse(Buffer.from(s, 'base64').toString('ascii'));
+        sessionjson = JSON.parse(Buffer.from(s, 'base64').toString('ascii'));
       } catch (error) {
         const msg = "Session data json file is corrupted. Please reauthenticate."
-      if(spinner) {
-        spinner.fail(msg)
-      } else console.error(msg);
-      return false;
+        if(spinner) {
+          spinner.fail(msg)
+        } else console.error(msg);
+        return false;
       }
     }
   } else {
@@ -282,16 +282,16 @@ export const addScript = async (page: Page, js : string) : Promise<unknown> => p
 export async function injectPreApiScripts(page: Page, spinner ?: Spin) : Promise<Page> {
   if(await page.evaluate("!['jsSHA','axios', 'QRCode', 'Base64', 'objectHash'].find(x=>!window[x])")) return;
   const t1 = await timePromise(() => Promise.all(
-   [
-     'axios.min.js',
-     'jsSha.min.js',
-     'qr.min.js',
-     'base64.js',
-     'hash.js'
-   ].map(js=>addScript(page,js))
-   ))
-   spinner?.info(`Base inject: ${t1}ms`);
-   return page;
+      [
+        'axios.min.js',
+        'jsSha.min.js',
+        'qr.min.js',
+        'base64.js',
+        'hash.js'
+      ].map(js=>addScript(page,js))
+  ))
+  spinner?.info(`Base inject: ${t1}ms`);
+  return page;
 }
 
 export async function injectWapi(page: Page, spinner ?: Spin, force = false) : Promise<Page> {
@@ -302,6 +302,10 @@ export async function injectWapi(page: Page, spinner ?: Spin, force = false) : P
   if(initCheck) return;
   log.info(`WAPI CHECK: ${initCheck}`)
   if(!check) force = true;
+
+  // Must reset this for multi session
+  wapiInjected = false;
+
   if(wapiInjected && !force) return page;
   const multiScriptInjectPromiseArr = Array(bruteInjectionAttempts).fill("wapi.js").map((_s)=>addScript(page,_s))
   try {
@@ -314,8 +318,8 @@ export async function injectWapi(page: Page, spinner ?: Spin, force = false) : P
   }
   spinner?.info("Checking session integrity")
   wapiAttempts++;
-   wapiInjected = !!(await page.waitForFunction(check,{ timeout: 3000, polling: 50 }).catch(e=>false))
-   if(!wapiInjected) {
+  wapiInjected = !!(await page.waitForFunction(check,{ timeout: 3000, polling: 50 }).catch(e=>false))
+  if(!wapiInjected) {
     spinner?.info(`Session integrity check failed, trying again... ${wapiAttempts}`);
     return await injectWapi(page, spinner, true)
   }
@@ -355,7 +359,7 @@ async function initBrowser(sessionId?: string, config:any={}, spinner ?: Spin) {
     try {
       browserDownloadSpinner.start('Downloading browser revision: ' + config.browserRevision);
       const revisionInfo = await browserFetcher.download(config.browserRevision, function(downloadedBytes,totalBytes){
-      browserDownloadSpinner.info(`Downloading Browser: ${Math.round(downloadedBytes/1000000)}/${Math.round(totalBytes/1000000)}`);
+        browserDownloadSpinner.info(`Downloading Browser: ${Math.round(downloadedBytes/1000000)}/${Math.round(totalBytes/1000000)}`);
       });
       if(revisionInfo.executablePath) {
         config.executablePath = revisionInfo.executablePath;
@@ -366,7 +370,7 @@ async function initBrowser(sessionId?: string, config:any={}, spinner ?: Spin) {
       browserDownloadSpinner.succeed('Something went wrong while downloading the browser');
     }
   }
-  
+
   if(config?.proxyServerCredentials?.address && config?.useNativeProxy) puppeteerConfig.chromiumArgs.push(`--proxy-server=${config.proxyServerCredentials.address}`)
   if(config?.browserWsEndpoint) config.browserWSEndpoint = config.browserWsEndpoint;
   let args = [...puppeteerConfig.chromiumArgs,...(config?.chromiumArgs||[])];
@@ -401,7 +405,7 @@ async function initBrowser(sessionId?: string, config:any={}, spinner ?: Spin) {
 
     if(config.devtools.user&&config.devtools.pass) {
       devtools.setAuthCredentials(config.devtools.user, config.devtools.pass)
-    } 
+    }
     puppeteer.use(devtools)
     try {
       // const tunnel = await devtools.createTunnel(browser);
@@ -412,8 +416,8 @@ async function initBrowser(sessionId?: string, config:any={}, spinner ?: Spin) {
       },null,2) : tunnel}`
       spinner.info(l);
     } catch (error) {
-    spinner.fail(error)
-    log.error("initBrowser -> error", error)
+      spinner.fail(error)
+      log.error("initBrowser -> error", error)
     }
   }
   return browser;
@@ -434,18 +438,18 @@ ON_DEATH(async () => {
 /**
  * @internal
  */
- export const kill = async (p: Page, b?: Browser, exit ?: boolean, pid ?: number, reason = "LAUNCH_KILL") => {
-     processSendData({
-      reason
-    })
-    timeout(3000)
-   const killBrowser = async (browser ?: Browser) => {
+export const kill = async (p: Page, b?: Browser, exit ?: boolean, pid ?: number, reason = "LAUNCH_KILL") => {
+  processSendData({
+    reason
+  })
+  timeout(3000)
+  const killBrowser = async (browser ?: Browser) => {
     if(!browser) return;
     pid = browser?.process() ? browser?.process().pid : null;
     if(!pid) return;
     if (!p?.isClosed()) await p?.close();
     if (browser) await browser?.close().catch(()=>{});
-   }
+  }
   if (p) {
     const browser = p?.browser && typeof p?.browser === 'function' && p?.browser();
     await killBrowser(browser);
